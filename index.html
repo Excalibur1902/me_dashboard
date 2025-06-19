@@ -1,0 +1,2174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Marine Engineering Contracts Management System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.75rem;
+      background-color: #f3f4f6;
+      background-image: url('https://raw.githubusercontent.com/Excalibur1902/me_dashboard/main/beach.jpg');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+    .nav-button {
+      transition: all 0.3s ease-in-out;
+      position: relative;
+      overflow: hidden;
+    }
+    .nav-button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      transition: all 0.5s ease-in-out;
+    }
+    .nav-button:hover::before {
+      left: 100%;
+    }
+    .nav-button.active {
+      background-color: #1e3a8a;
+      color: white;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      transform: translateY(-2px);
+    }
+    .card {
+      background-color: rgba(255, 255, 255, 0.95);
+      border-radius: 0.75rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(5px);
+    }
+    .table-auto th, .table-auto td {
+      padding: 0.75rem;
+      text-align: left;
+    }
+    .table-auto thead th {
+      background-color: #eff6ff;
+      color: #1e40af;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 2px solid #bfdbfe;
+    }
+    .table-auto tbody tr:nth-child(odd) {
+      background-color: #f9fafb;
+    }
+    .table-auto tbody tr:hover {
+      background-color: #e0f2fe;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5);
+      border-color: #3b82f6;
+    }
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background-color: white;
+      padding: 2rem;
+      border-radius: 0.75rem;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+      width: 90%;
+      max-width: 500px;
+      position: relative;
+      animation: fadeInScale 0.3s ease-out;
+    }
+    @keyframes fadeInScale {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    canvas {
+        max-width: 100%;
+        height: auto;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col text-gray-800">
+
+  <!-- Header -->
+  <header class="bg-gradient-to-r from-blue-700 to-blue-900 text-white p-4 shadow-lg">
+    <div class="container mx-auto flex flex-col sm:flex-row justify-between items-center">
+      <h1 class="text-2xl font-bold mb-2 sm:mb-0 flex items-center">
+        <span class="mr-2" data-lucide="ship"></span>
+        Marine Engineering Contracts
+      </h1>
+      <nav class="flex space-x-2 sm:space-x-4">
+        <button class="nav-button bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg flex items-center text-sm" onclick="showPage('home', this)">
+          <span class="mr-1" data-lucide="layout-dashboard"></span>Dashboard
+        </button>
+        <button class="nav-button bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg flex items-center text-sm" onclick="showPage('contracts', this)">
+          <span class="mr-1" data-lucide="clipboard-list"></span>Contracts
+        </button>
+        <button class="nav-button bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg flex items-center text-sm" onclick="showPage('activities', this)">
+          <span class="mr-1" data-lucide="activity"></span>Activities
+        </button>
+        <button class="nav-button bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg flex items-center text-sm" onclick="showPage('documents', this)">
+          <span class="mr-1" data-lucide="folder-dot"></span>Documents
+        </button>
+        <button class="nav-button bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg flex items-center text-sm" onclick="showPage('media', this)">
+          <span class="mr-1" data-lucide="image"></span>Media
+        </button>
+        <button class="nav-button bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg flex items-center text-sm" onclick="showPage('progress-photos', this)">
+          <span class="mr-1" data-lucide="camera"></span>Progress Photos
+        </button>
+        <button class="nav-button bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg flex items-center text-sm" onclick="fetchAndLoadDataFromGitHub()">
+          <span class="mr-1" data-lucide="github"></span>Load GitHub Data
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main id="app-content" class="flex-grow container mx-auto p-4 sm:p-6 lg:p-8 overflow-y-auto">
+    <!-- Content will be dynamically loaded here -->
+  </main>
+
+  <script>
+    // Initialize data variables
+    let contracts = [];
+    let activities = [];
+    let documents = [];
+    let media = [];
+    let myCharts = {}; // To store chart instances
+    // New global variable for organized progress photos
+    let progressPhotosData = {};
+
+    // Utility function for fuzzy search
+    function fuzzySearch(text, query) {
+        if (!query) return true;
+        const lowerText = String(text).toLowerCase();
+        const lowerQuery = String(query).toLowerCase();
+        return lowerText.includes(lowerQuery);
+    }
+
+    // Global variable to store the current page ID and active button
+    let currentPageId = 'home';
+    let currentActiveButton = null;
+
+    // Function to format currency (Changed to AED)
+    function formatCurrency(value) {
+      // Ensure value is a number, cleaning up any non-numeric characters first
+      const numericValue = parseFloat(String(value).replace(/[^0-9.-]+/g, "")) || 0;
+      return new Intl.NumberFormat('en-AE', { // Changed locale to en-AE
+        style: 'currency',
+        currency: 'AED', // Changed currency to AED
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(numericValue);
+    }
+
+    // Function to format dates to 'dd mmm yyyy' consistently using UTC
+    function formatDate(dateValue) {
+      if (!dateValue) return '';
+
+      let date;
+      if (dateValue instanceof Date) {
+        date = dateValue; // Already a Date object from XLSX with cellDates: true
+      } else {
+        // Fallback for non-Date objects, though cellDates should handle most cases
+        date = new Date(dateValue);
+      }
+
+      if (isNaN(date.getTime())) {
+        console.warn("Invalid date encountered:", dateValue);
+        return '';
+      }
+
+      // Format the date to 'dd mmm yyyy' using UTC to prevent timezone shifts.
+      // This ensures the *calendar date* from Excel is preserved.
+      const options = { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' };
+      return new Intl.DateTimeFormat('en-GB', options).format(date);
+    }
+
+    /**
+     * Calculates the ISO week number for a given date.
+     * Source: https://stackoverflow.com/questions/6117814/get-week-of-year-in-javascript-using-gettime
+     * @param {Date} d The date object.
+     * @returns {number} The ISO week number.
+     */
+    function getWeekNumber(d) {
+        // Copy date so don't modify original
+        d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+        // Set to nearest Thursday: current date + 4 - current day number
+        // Make Sunday's day number 7
+        d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+        // Get first day of year
+        var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        // Calculate full weeks to nearest Thursday
+        var weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        return weekNo;
+    }
+
+
+    /**
+     * Fetches XLSX data from a specified raw GitHub URL and populates the application's data.
+     */
+    async function fetchAndLoadDataFromGitHub() {
+        const xlsxUrl = 'https://raw.githubusercontent.com/Excalibur1902/me_dashboard/main/ME_Data.xlsx';
+
+        try {
+            document.getElementById('app-content').innerHTML = `
+                <div class="card p-6 text-center text-blue-700 mt-8">
+                    <p class="text-xl font-semibold mb-4">Loading data from GitHub...</p>
+                    <div class="flex justify-center items-center">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                    </div>
+                </div>
+            `;
+            // Ensure icons are rendered for the loading state
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+
+            // Destroy existing charts to prevent issues with new data
+            for (const chartId in myCharts) {
+                if (myCharts[chartId]) {
+                    myCharts[chartId].destroy();
+                }
+            }
+            myCharts = {};
+
+            console.log(`Attempting to fetch XLSX from ${xlsxUrl}`);
+            const response = await fetch(xlsxUrl);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status} for ${xlsxUrl}`);
+            }
+
+            // Fetch the file as an ArrayBuffer, which XLSX.read expects
+            const arrayBuffer = await response.arrayBuffer();
+
+            // Parse the Excel file with cellDates: true for proper date handling
+            const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
+
+            // Extract data from specific sheets
+            if (workbook.SheetNames.includes('Contracts')) {
+                contracts = XLSX.utils.sheet_to_json(workbook.Sheets['Contracts']);
+                // Explicitly convert 'Value' to a number for calculation and display
+                contracts.forEach(contract => {
+                    if (typeof contract['Value'] === 'string') {
+                        // Remove all characters except digits, and a single decimal point or minus sign
+                        const cleanedValue = contract['Value'].replace(/[^0-9.-]+/g, "");
+                        contract['Value'] = parseFloat(cleanedValue) || 0; // Use parseFloat and default to 0
+                    } else if (typeof contract['Value'] !== 'number') {
+                        contract['Value'] = 0; // Default to 0 if it's not a number or a convertible string
+                    }
+                });
+            } else {
+                console.warn("Contracts sheet not found in the Excel file.");
+                contracts = [];
+            }
+
+            if (workbook.SheetNames.includes('Activities')) {
+                activities = XLSX.utils.sheet_to_json(workbook.Sheets['Activities']);
+            } else {
+                console.warn("Activities sheet not found in the Excel file.");
+                activities = [];
+            }
+
+            if (workbook.SheetNames.includes('Documents')) {
+                documents = XLSX.utils.sheet_to_json(workbook.Sheets['Documents']);
+            } else {
+                console.warn("Documents sheet not found in the Excel file.");
+                documents = [];
+            }
+
+            if (workbook.SheetNames.includes('Media')) {
+                media = XLSX.utils.sheet_to_json(workbook.Sheets['Media']);
+                progressPhotosData = {}; // Reset for new data
+
+                media.forEach(item => {
+                    let uploadDate = new Date(item['Upload Date']); // Assuming Upload Date is the relevant date
+                    if (isNaN(uploadDate.getTime())) {
+                        // If Upload Date is invalid, try DateTaken, otherwise skip
+                        const dateTaken = new Date(item['DateTaken']);
+                        if (!isNaN(dateTaken.getTime())) {
+                            uploadDate = dateTaken;
+                        } else {
+                            console.warn("Invalid Upload Date and DateTaken for media item:", item);
+                            return;
+                        }
+                    }
+
+                    const year = uploadDate.getFullYear();
+                    // Using toLocaleString with UTC for consistent month names
+                    const month = uploadDate.toLocaleString('en-GB', { month: 'long', timeZone: 'UTC' });
+                    const weekNumber = getWeekNumber(uploadDate);
+
+                    const contractId = item['ContractID']; // Corrected to match CSV header
+                    if (!contractId) {
+                        console.warn("Media item missing ContractID:", item);
+                        return;
+                    }
+
+                    if (!progressPhotosData[contractId]) {
+                        progressPhotosData[contractId] = {};
+                    }
+                    if (!progressPhotosData[contractId][year]) {
+                        progressPhotosData[contractId][year] = {};
+                    }
+                    if (!progressPhotosData[contractId][year][month]) {
+                        progressPhotosData[contractId][year][month] = {};
+                    }
+                    if (!progressPhotosData[contractId][year][month][weekNumber]) {
+                        progressPhotosData[contractId][year][month][weekNumber] = [];
+                    }
+                    progressPhotosData[contractId][year][month][weekNumber].push(item);
+                });
+            } else {
+                console.warn("Media sheet not found in the Excel file.");
+                media = [];
+                progressPhotosData = {};
+            }
+
+            // After loading, re-render the current page to show the new data
+            // Use the parsed hash parameters to ensure deep linking works after data load
+            const hash = window.location.hash.substring(1);
+            const parts = hash.split('?');
+            const pageIdFromHash = parts[0] || 'home';
+            const queryParams = new URLSearchParams(parts[1]);
+            const contractIdFromHash = queryParams.get('contractId');
+            const yearFromHash = queryParams.get('year');
+            const monthFromHash = queryParams.get('month');
+            const weekFromHash = queryParams.get('week');
+
+            showPage(pageIdFromHash, null, contractIdFromHash, yearFromHash, monthFromHash, weekFromHash);
+
+        }
+        catch (error) {
+            console.error("Error loading data from GitHub:", error);
+            // Display a user-friendly error message in the UI
+            const appContent = document.getElementById('app-content');
+            appContent.innerHTML = `
+                <div class="card p-6 text-center text-red-500 mt-8">
+                    <p class="text-xl font-semibold mb-4 flex items-center justify-center">
+                        <span class="mr-2" data-lucide="alert-triangle"></span>
+                        Error loading data!
+                    </p>
+                    <p class="text-gray-700 mb-4">Please check the console for technical details.</p>
+                    <p class="text-gray-600">Ensure the Excel file exists at the provided GitHub URL and has the correct sheet names (Contracts, Activities, Documents, Media).</p>
+                    <button onclick="showPage('home')" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg mt-6 flex items-center text-sm mx-auto">
+                        <span class="mr-1" data-lucide="home"></span>Go to Dashboard
+                    </button>
+                </div>
+            `;
+             if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+    }
+
+
+    // --- Contract Table Functions ---
+    let currentContractSortColumn = '';
+    let currentContractSortDirection = 'asc'; // 'asc' or 'desc'
+
+    function renderSortIcon(column) {
+        if (currentContractSortColumn === column) {
+            return `<span class="inline-block ml-1" data-lucide="${currentContractSortDirection === 'asc' ? 'chevron-up' : 'chevron-down'}" style="width:12px; height:12px;"></span>`;
+        }
+        return `<span class="inline-block ml-1" data-lucide="minus" style="width:12px; height:12px; color:#9CA3AF;"></span>`; // Placeholder for unsorted
+    }
+
+    function sortContracts(column) {
+        if (currentContractSortColumn === column) {
+            currentContractSortDirection = currentContractSortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            currentContractSortColumn = column;
+            currentContractSortDirection = 'asc';
+        }
+        filterContracts(); // Re-filter and re-render with new sort order
+    }
+
+    function filterContracts() {
+      const searchValue = document.getElementById('contractSearch')?.value.trim() || '';
+      const statusFilter = document.getElementById('contractStatusFilter')?.value.trim() || '';
+      const engineerFilter = document.getElementById('contractEngineerFilter')?.value.trim() || '';
+
+      let filtered = contracts.filter(contract => {
+        const contractStatus = contract.Status ? String(contract.Status).trim().toLowerCase() : ''; // Convert to lowercase
+        const contractEngineer = contract['Lead Engineer'] ? String(contract['Lead Engineer']).trim().toLowerCase() : ''; // Convert to lowercase
+
+        const matchesSearch = fuzzySearch(Object.values(contract).join(' '), searchValue);
+        const matchesStatus = statusFilter === '' || contractStatus === statusFilter.toLowerCase(); // Compare with lowercase filter
+        const matchesEngineer = engineerFilter === '' || contractEngineer === engineerFilter.toLowerCase(); // Compare with lowercase filter
+
+        return matchesSearch && matchesStatus && matchesEngineer;
+      });
+
+      // Sort the filtered data
+      if (currentContractSortColumn) {
+          filtered.sort((a, b) => {
+              let valA = a[currentContractSortColumn];
+              let valB = b[currentContractSortColumn];
+
+              // Handle date comparisons, ensuring valid Date objects
+              if (currentContractSortColumn.includes('Date')) {
+                  const dateA = (valA instanceof Date) ? valA : new Date(valA);
+                  const dateB = (valB instanceof Date) ? valB : new Date(valB);
+
+                  if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) return 0; // Both invalid, treat as equal
+                  if (isNaN(dateA.getTime())) { // A is invalid, B is valid. A comes after B if ascending, before if descending
+                    return currentContractSortDirection === 'asc' ? 1 : -1;
+                  }
+                  if (isNaN(dateB.getTime())) { // B is invalid, A is valid. B comes after A if ascending, before if descending
+                    return currentContractSortDirection === 'asc' ? -1 : 1;
+                  }
+
+                  return currentContractSortDirection === 'asc' ? dateA.getTime() - dateB.getTime() : dateB.getTime() - dateA.getTime();
+              }
+              // Handle numeric comparisons
+              if (typeof valA === 'number' && typeof valB === 'number') {
+                  return currentContractSortDirection === 'asc' ? valA - valB : valB - valA;
+              }
+              // Handle string comparisons (case-insensitive for robust sorting)
+              const strA = String(valA).toLowerCase();
+              const strB = String(valB).toLowerCase();
+              if (strA < strB) {
+                  return currentContractSortDirection === 'asc' ? -1 : 1;
+              }
+              if (strA > strB) {
+                  return currentContractSortDirection === 'asc' ? 1 : -1;
+              }
+              return 0;
+          });
+      }
+
+      const tbody = document.getElementById('contracts-table-body');
+      if (!tbody) {
+        console.warn('Contracts table body not found for filtering.');
+        return; // Exit if tbody not found (e.g., on different page)
+      }
+
+      tbody.innerHTML = ''; // Clear current table
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="12" class="text-center py-4 text-gray-500">No contracts found matching your criteria.</td></tr>';
+        return;
+      }
+
+      filtered.forEach(contract => {
+        const row = document.createElement('tr');
+        row.className = 'border-b border-gray-200 last:border-b-0 hover:bg-gray-50';
+        row.innerHTML = `
+          <td class="py-2 px-3 whitespace-nowrap">
+            <a href="javascript:void(0)" onclick="showPage('contracts', null, '${contract['Contract ID']}')" class="text-blue-600 hover:underline font-medium">
+              ${contract['Contract ID']}
+            </a>
+          </td>
+          <td class="py-2 px-3">${contract['Project Name']}</td>
+          <td class="py-2 px-3">${contract.Client}</td>
+          <td class="py-2 px-3">${formatDate(contract['Start Date'])}</td>
+          <td class="py-2 px-3">${formatDate(contract['End Date'])}</td>
+          <td class="py-2 px-3 text-right">${formatCurrency(contract['Value'])}</td>
+          <td class="py-2 px-3"><span class="px-2 py-1 rounded-full text-xs font-semibold ${contract.Status === 'Completed' ? 'bg-blue-100 text-blue-800' : contract.Status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${contract.Status}</span></td>
+          <td class="py-2 px-3">${contract['Lead Engineer']}</td>
+        `;
+        tbody.appendChild(row);
+      });
+
+      // Re-render Lucide icons for the newly rendered table rows
+      if (typeof lucide !== 'undefined') {
+          lucide.createIcons();
+      }
+    }
+
+    function renderContractsTable() {
+      filterContracts(); // Use filter function for initial render as well
+    }
+
+
+    // --- Activities Table Functions ---
+    let currentActivitySortColumn = '';
+    let currentActivitySortDirection = 'asc';
+
+    function renderSortIconActivity(column) {
+        if (currentActivitySortColumn === column) {
+            return `<span class="inline-block ml-1" data-lucide="${currentActivitySortDirection === 'asc' ? 'chevron-up' : 'chevron-down'}" style="width:12px; height:12px;"></span>`;
+        }
+        return `<span class="inline-block ml-1" data-lucide="minus" style="width:12px; height:12px; color:#9CA3AF;"></span>`;
+    }
+
+    function sortActivities(column) {
+        if (currentActivitySortColumn === column) {
+            currentActivitySortDirection = currentActivitySortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            currentActivitySortColumn = column;
+            currentActivitySortDirection = 'asc';
+        }
+        filterActivities();
+    }
+
+    function filterActivities() {
+      const searchValue = document.getElementById('activitySearch')?.value.trim() || '';
+      const statusFilter = document.getElementById('activityStatusFilter')?.value.trim() || '';
+      const contractFilter = document.getElementById('activityContractFilter')?.value.trim() || '';
+
+      let filtered = activities.filter(activityItem => { // Renamed parameter
+        const activityStatus = activityItem.Status ? String(activityItem.Status).trim().toLowerCase() : ''; // Convert to lowercase
+        const activityContract = activityItem['Contract ID'] ? String(activityItem['Contract ID']).trim().toLowerCase() : ''; // Convert to lowercase
+
+        const matchesSearch = fuzzySearch(Object.values(activityItem).join(' '), searchValue);
+        const matchesStatus = statusFilter === '' || activityStatus === statusFilter.toLowerCase(); // Compare with lowercase filter
+        const matchesContract = contractFilter === '' || activityContract === contractFilter.toLowerCase(); // Compare with lowercase filter
+        return matchesSearch && matchesStatus && matchesContract;
+      });
+
+      if (currentActivitySortColumn) {
+          filtered.sort((a, b) => {
+              let valA = a[currentActivitySortColumn];
+              let valB = b[currentActivitySortColumn];
+
+              // Handle date comparisons, ensuring valid Date objects
+              if (currentActivitySortColumn.includes('Date')) {
+                  const dateA = (valA instanceof Date) ? valA : new Date(valA);
+                  const dateB = (valB instanceof Date) ? valB : new Date(valB);
+
+                  if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) return 0; // Both invalid, treat as equal
+                  if (isNaN(dateA.getTime())) { // A is invalid, B is valid. A comes after B if ascending, before if descending
+                    return currentActivitySortDirection === 'asc' ? 1 : -1;
+                  }
+                  if (isNaN(dateB.getTime())) { // B is invalid, A is valid. B comes after A if ascending, before if descending
+                    return currentActivitySortDirection === 'asc' ? -1 : 1;
+                  }
+
+                  return currentActivitySortDirection === 'asc' ? dateA.getTime() - dateB.getTime() : dateB.getTime() - dateA.getTime();
+              }
+              // Handle numeric comparisons
+              if (typeof valA === 'number' && typeof valB === 'number') {
+                  return currentActivitySortDirection === 'asc' ? valA - valB : valB - valA;
+              }
+              // Handle string comparisons (case-insensitive for robust sorting)
+              const strA = String(valA).toLowerCase();
+              const strB = String(valB).toLowerCase();
+              if (strA < strB) {
+                  return currentActivitySortDirection === 'asc' ? -1 : 1;
+              }
+              if (strA > strB) {
+                  return currentActivitySortDirection === 'asc' ? 1 : -1;
+              }
+              return 0;
+          });
+      }
+
+      const tbody = document.getElementById('activities-table-body');
+      if (!tbody) {
+        console.warn('Activities table body not found for filtering.');
+        return;
+      }
+
+      tbody.innerHTML = '';
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="11" class="text-center py-4 text-gray-500">No activities found matching your criteria.</td></tr>';
+        return;
+      }
+
+      filtered.forEach(activityItem => { // Renamed parameter
+        const row = document.createElement('tr');
+        row.className = 'border-b border-gray-200 last:border-b-0 hover:bg-gray-50';
+        row.innerHTML = `
+          <td class="py-2 px-3 whitespace-nowrap">${activityItem['Activity ID']}</td>
+          <td class="py-2 px-3 whitespace-nowrap">
+            <a href="javascript:void(0)" onclick="showPage('contracts', null, '${activityItem['Contract ID']}')" class="text-blue-600 hover:underline font-medium">
+                ${activityItem['Contract ID']}
+            </a>
+          </td>
+          <td class="py-2 px-3">${activityItem['Activity Name']}</td>
+          <td class="py-2 px-3">${formatDate(activityItem['Start Date'])}</td>
+          <td class="py-2 px-3">${formatDate(activityItem['End Date'])}</td>
+          <td class="py-2 px-3"><span class="px-2 py-1 rounded-full text-xs font-semibold ${activityItem.Status === 'Completed' ? 'bg-blue-100 text-blue-800' : activityItem.Status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${activityItem.Status}</span></td>
+          <td class="py-2 px-3">${activityItem['Assigned To']}</td>
+        `;
+        tbody.appendChild(row);
+      });
+
+      // Re-render Lucide icons for the newly rendered table rows
+      if (typeof lucide !== 'undefined') {
+          lucide.createIcons();
+      }
+    }
+
+    function renderActivitiesTable() {
+      filterActivities(); // Use filter function for initial render as well
+    }
+
+
+    // --- Documents Table Functions ---
+    let currentDocumentSortColumn = '';
+    let currentDocumentSortDirection = 'asc';
+
+    function renderSortIconDocument(column) {
+        if (currentDocumentSortColumn === column) {
+            return `<span class="inline-block ml-1" data-lucide="${currentDocumentSortDirection === 'asc' ? 'chevron-up' : 'chevron-down'}" style="width:12px; height:12px;"></span>`;
+        }
+        return `<span class="inline-block ml-1" data-lucide="minus" style="width:12px; height:12px; color:#9CA3AF;"></span>`;
+    }
+
+    function sortDocuments(column) {
+        if (currentDocumentSortColumn === column) {
+            currentDocumentSortDirection = currentDocumentSortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            currentDocumentSortColumn = column;
+            currentDocumentSortDirection = 'asc';
+        }
+        filterDocuments();
+    }
+
+    function filterDocuments() {
+      const searchValue = document.getElementById('documentSearch')?.value.trim() || '';
+      const typeFilter = document.getElementById('documentTypeFilter')?.value.trim() || '';
+      const contractFilter = document.getElementById('documentContractFilter')?.value.trim() || '';
+
+      let filtered = documents.filter(doc => { // Renamed parameter
+        const docType = doc['Document Type'] ? String(doc['Document Type']).trim().toLowerCase() : ''; // Convert to lowercase
+        const docContract = doc['Contract ID'] ? String(doc['Contract ID']).trim().toLowerCase() : ''; // Convert to lowercase
+
+        const matchesSearch = fuzzySearch(Object.values(doc).join(' '), searchValue);
+        const matchesType = typeFilter === '' || docType === typeFilter.toLowerCase(); // Compare with lowercase filter
+        const matchesContract = contractFilter === '' || docContract === contractFilter.toLowerCase(); // Compare with lowercase filter
+        return matchesSearch && matchesType && matchesContract;
+      });
+
+      if (currentDocumentSortColumn) {
+          filtered.sort((a, b) => {
+              let valA = a[currentDocumentSortColumn];
+              let valB = b[currentDocumentSortColumn];
+
+              // Handle date comparisons, ensuring valid Date objects
+              if (currentDocumentSortColumn.includes('Date')) {
+                  const dateA = (valA instanceof Date) ? valA : new Date(valA);
+                  const dateB = (valB instanceof Date) ? valB : new Date(valB);
+
+                  if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) return 0; // Both invalid, treat as equal
+                  if (isNaN(dateA.getTime())) { // A is invalid, B is valid. A comes after B if ascending, before if descending
+                    return currentDocumentSortDirection === 'asc' ? 1 : -1;
+                  }
+                  if (isNaN(dateB.getTime())) { // B is invalid, A is valid. B comes after A if ascending, before if descending
+                    return currentDocumentSortDirection === 'asc' ? -1 : 1;
+                  }
+
+                  return currentDocumentSortDirection === 'asc' ? dateA.getTime() - dateB.getTime() : dateB.getTime() - dateA.getTime();
+              }
+              // Handle numeric comparisons
+              if (typeof valA === 'number' && typeof valB === 'number') {
+                  return currentDocumentSortDirection === 'asc' ? valA - valB : valB - valA;
+              }
+              // Handle string comparisons (case-insensitive for robust sorting)
+              const strA = String(valA).toLowerCase();
+              const strB = String(valB).toLowerCase();
+              if (strA < strB) {
+                  return currentDocumentSortDirection === 'asc' ? -1 : 1;
+              }
+              if (strA > strB) {
+                  return currentDocumentSortDirection === 'asc' ? 1 : -1;
+              }
+              return 0;
+          });
+      }
+
+      const tbody = document.getElementById('documents-table-body');
+      if (!tbody) {
+        console.warn('Documents table body not found for filtering.');
+        return;
+      }
+
+      tbody.innerHTML = '';
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="14" class="text-center py-4 text-gray-500">No documents found matching your criteria.</td></tr>';
+        return;
+      }
+
+      filtered.forEach(doc => { // Renamed parameter
+        const row = document.createElement('tr');
+        row.className = 'border-b border-gray-200 last:border-b-0 hover:bg-gray-50';
+        row.innerHTML = `
+          <td class="py-2 px-3 whitespace-nowrap">${doc['Document ID']}</td>
+          <td class="py-2 px-3 whitespace-nowrap">
+            <a href="javascript:void(0)" onclick="showPage('contracts', null, '${doc['Contract ID']}')" class="text-blue-600 hover:underline font-medium">
+                ${doc['Contract ID']}
+            </a>
+          </td>
+          <td class="py-2 px-3">
+            <a href="${doc['FilePathOrURL']}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline font-medium">
+                ${doc['Document Name']}
+            </a>
+          </td>
+          <td class="py-2 px-3">${doc['Document Type']}</td>
+          <td class="py-2 px-3">${formatDate(doc['Upload Date'])}</td>
+        `;
+        tbody.appendChild(row);
+      });
+
+      // Re-render Lucide icons for the newly rendered table rows
+      if (typeof lucide !== 'undefined') {
+          lucide.createIcons();
+      }
+    }
+
+    function renderDocumentsTable() {
+      filterDocuments();
+    }
+
+
+    // --- Media Table Functions ---
+    let currentMediaSortColumn = '';
+    let currentMediaSortDirection = 'asc';
+
+    function renderSortIconMedia(column) {
+        if (currentMediaSortColumn === column) {
+            return `<span class="inline-block ml-1" data-lucide="${currentMediaSortDirection === 'asc' ? 'chevron-up' : 'chevron-down'}" style="width:12px; height:12px;"></span>`;
+        }
+        return `<span class="inline-block ml-1" data-lucide="minus" style="width:12px; height:12px; color:#9CA3AF;"></span>`;
+    }
+
+    function sortMedia(column) {
+        if (currentMediaSortColumn === column) {
+            currentMediaSortDirection = currentMediaSortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            currentMediaSortColumn = column;
+            currentMediaSortDirection = 'asc';
+        }
+        filterMedia();
+    }
+
+    function filterMedia() {
+      const searchValue = document.getElementById('mediaSearch')?.value.trim() || '';
+      const typeFilter = document.getElementById('mediaTypeFilter')?.value.trim() || '';
+      const contractFilter = document.getElementById('mediaContractFilter')?.value.trim() || '';
+
+      let filtered = media.filter(mediaItem => { // Renamed parameter
+        const mediaType = mediaItem['File Type'] ? String(mediaItem['File Type']).trim().toLowerCase() : ''; // Convert to lowercase
+        const mediaContract = mediaItem['Contract ID'] ? String(mediaItem['Contract ID']).trim().toLowerCase() : ''; // Convert to lowercase
+
+        const matchesSearch = fuzzySearch(Object.values(mediaItem).join(' '), searchValue);
+        const matchesType = typeFilter === '' || mediaType === typeFilter.toLowerCase(); // Compare with lowercase filter
+        const matchesContract = contractFilter === '' || mediaContract === contractFilter.toLowerCase(); // Compare with lowercase filter
+        return matchesSearch && matchesType && matchesContract;
+      });
+
+      if (currentMediaSortColumn) {
+          filtered.sort((a, b) => {
+              let valA = a[currentMediaSortColumn];
+              let valB = b[currentMediaSortColumn];
+
+              // Handle date comparisons, ensuring valid Date objects
+              if (currentMediaSortColumn.includes('Date')) {
+                  const dateA = (valA instanceof Date) ? valA : new Date(valA);
+                  const dateB = (valB instanceof Date) ? valB : new Date(valB);
+
+                  if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) return 0; // Both invalid, treat as equal
+                  if (isNaN(dateA.getTime())) { // A is invalid, B is valid. A comes after B if ascending, before if descending
+                    return currentMediaSortDirection === 'asc' ? 1 : -1;
+                  }
+                  if (isNaN(dateB.getTime())) { // B is invalid, A is valid. B comes after A if ascending, before if descending
+                    return currentMediaSortDirection === 'asc' ? -1 : 1;
+                  }
+
+                  return currentMediaSortDirection === 'asc' ? dateA.getTime() - dateB.getTime() : dateB.getTime() - dateA.getTime();
+              }
+              // Handle numeric comparisons
+              if (typeof valA === 'number' && typeof valB === 'number') {
+                  return currentMediaSortDirection === 'asc' ? valA - valB : valB - valA;
+              }
+              // Handle string comparisons (case-insensitive for robust sorting)
+              const strA = String(valA).toLowerCase();
+              const strB = String(valB).toLowerCase();
+              if (strA < strB) {
+                  return currentMediaSortDirection === 'asc' ? -1 : 1;
+              }
+              if (strA > strB) {
+                  return currentMediaSortDirection === 'asc' ? 1 : -1;
+              }
+              return 0;
+          });
+      }
+
+      const tbody = document.getElementById('media-table-body');
+      if (!tbody) {
+        console.warn('Media table body not found for filtering.');
+        return;
+      }
+
+      tbody.innerHTML = '';
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-gray-500">No media files found matching your criteria.</td></tr>';
+        return;
+      }
+
+      filtered.forEach(mediaItem => { // Renamed parameter
+        const row = document.createElement('tr');
+        row.className = 'border-b border-gray-200 last:border-b-0 hover:bg-gray-50';
+        row.innerHTML = `
+          <td class="py-2 px-3 whitespace-nowrap">${mediaItem['Media ID']}</td>
+          <td class="py-2 px-3 whitespace-nowrap">
+            <a href="javascript:void(0)" onclick="showPage('contracts', null, '${mediaItem['Contract ID']}')" class="text-blue-600 hover:underline font-medium">
+                ${mediaItem['Contract ID']}
+            </a>
+          </td>
+          <td class="py-2 px-3">${mediaItem['File Name']}</td>
+          <td class="py-2 px-3">${mediaItem['File Type']}</td>
+          <td class="py-2 px-3">${formatDate(mediaItem['Upload Date'])}</td>
+          <td class="py-2 px-3">${mediaItem.Description}</td>
+        `;
+        tbody.appendChild(row);
+      });
+
+      // Re-render Lucide icons for the newly rendered table rows
+      if (typeof lucide !== 'undefined') {
+          lucide.createIcons();
+      }
+    }
+
+    function renderMediaTable() {
+      filterMedia();
+    }
+
+    /**
+     * Toggles the visibility of additional rows in a table.
+     * @param {string} hiddenTableBodyId The ID of the tbody containing the hidden rows.
+     * @param {HTMLElement} buttonElement The button that was clicked.
+     * @param {number} totalRemaining The total number of rows that were initially hidden.
+     */
+    function toggleTableRows(hiddenTableBodyId, buttonElement, totalRemaining) {
+        const hiddenBody = document.getElementById(hiddenTableBodyId);
+        if (hiddenBody) {
+            hiddenBody.classList.toggle('hidden');
+            const lucideIconSpan = buttonElement.querySelector('span[data-lucide]');
+            if (hiddenBody.classList.contains('hidden')) {
+                buttonElement.innerHTML = `<span class="mr-1" data-lucide="plus"></span>Show ${totalRemaining} more...`;
+                if (lucideIconSpan) lucideIconSpan.setAttribute('data-lucide', 'plus');
+            } else {
+                buttonElement.innerHTML = `<span class="mr-1" data-lucide="minus"></span>Show less`;
+                if (lucideIconSpan) lucideIconSpan.setAttribute('data-lucide', 'minus');
+            }
+            // Re-render Lucide icons for the updated button
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+    }
+
+
+    /**
+     * Shows a specific page by rendering its content and updating the URL hash.
+     * @param {string} pageId The ID of the page to show ('home', 'contracts', etc.).
+     * @param {HTMLElement} [clickedButton] The navigation button that was clicked (optional).
+     * @param {string} [contractId] Optional: A contract ID to deep link into a specific contract detail.
+     * @param {string} [year] Optional: Year for progress photos.
+     * @param {string} [month] Optional: Month for progress photos.
+     * @param {string} [week] Optional: Week for progress photos.
+     */
+    function showPage(pageId, clickedButton = null, contractId = null, year = null, month = null, week = null) {
+      console.log(`Attempting to show page: ${pageId}, contractId: ${contractId}, year: ${year}, month: ${month}, week: ${week}`);
+      const appContent = document.getElementById('app-content');
+      appContent.innerHTML = ''; // Clear existing content
+
+      // Destroy any existing Chart.js instances before rendering new content
+      for (const chartId in myCharts) {
+        if (myCharts[chartId]) {
+          myCharts[chartId].destroy();
+          console.log(`Destroyed chart: ${chartId}`);
+        }
+      }
+      myCharts = {}; // Reset myCharts object
+
+      // Update URL hash without reloading the page
+      let newHash = pageId;
+      const params = new URLSearchParams();
+      if (contractId) params.set('contractId', contractId);
+      if (year) params.set('year', year);
+      if (month) params.set('month', month);
+      if (week) params.set('week', week);
+
+      if (params.toString()) {
+          newHash += `?${params.toString()}`;
+      }
+      window.location.hash = newHash;
+
+      // Update active navigation button
+      document.querySelectorAll('.nav-button').forEach(button => {
+        button.classList.remove('active');
+      });
+
+      if (clickedButton) {
+        clickedButton.classList.add('active');
+        currentActiveButton = clickedButton;
+      } else {
+        // If no button was clicked (e.g., on initial load or popstate), find and activate it
+        const targetButton = document.querySelector(`.nav-button[onclick*="showPage('${pageId}'"]`);
+        if (targetButton) {
+          targetButton.classList.add('active');
+          currentActiveButton = targetButton;
+        }
+      }
+      currentPageId = pageId; // Update current page ID
+
+      // Render page content based on pageId
+      switch (pageId) {
+        case 'home':
+          renderHomePage();
+          break;
+        case 'contracts':
+          renderContractsPage(contractId);
+          break;
+        case 'activities':
+          renderActivitiesPage();
+          break;
+        case 'documents':
+          renderDocumentsPage();
+          break;
+        case 'media':
+          renderMediaPage();
+          break;
+        case 'progress-photos': // New case for progress photos
+          renderProgressPhotosPage(contractId, year, month, week);
+          break;
+        default:
+          appContent.innerHTML = '<p class="text-center text-red-500 mt-8 text-lg">Page not found.</p>';
+      }
+      // Re-render Lucide icons for the entire appContent after new HTML is injected
+      if (typeof lucide !== 'undefined') {
+          lucide.createIcons();
+      }
+      // Scroll to top of content area for better UX
+      appContent.scrollTop = 0;
+    }
+
+    // Home Page Renderer
+    function renderHomePage() {
+      const appContent = document.getElementById('app-content');
+      appContent.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <!-- Total Contracts Card -->
+          <div class="card p-6 flex items-center justify-between">
+            <div>
+              <div class="text-blue-600 text-lg font-semibold">Total Contracts</div>
+              <div class="text-3xl font-bold text-gray-900 mt-1">${contracts.length}</div>
+            </div>
+            <span class="text-blue-500" data-lucide="clipboard-list" style="width:48px; height:48px;"></span>
+          </div>
+
+          <!-- Active Contracts Card -->
+          <div class="card p-6 flex items-center justify-between">
+            <div>
+              <div class="text-green-600 text-lg font-semibold">Active Contracts</div>
+              <div class="text-4xl font-bold text-gray-900 mt-1">${contracts.filter(c => c.Status === 'Active').length}</div>
+            </div>
+            <span class="text-green-500" data-lucide="play-circle" style="width:48px; height:48px;"></span>
+          </div>
+
+          <!-- Total Contract Value Card -->
+          <div class="card p-6 flex items-center justify-between">
+            <div>
+              <div class="text-purple-600 text-lg font-semibold">Total Contract Value</div>
+              <div class="text-3xl font-bold text-gray-900 mt-1">${formatCurrency(contracts.reduce((sum, c) => sum + (c['Value'] || 0), 0))}</div>
+            </div>
+            <span class="text-purple-500" data-lucide="currency-dollar" style="width:48px; height:48px;"></span>
+          </div>
+
+          <!-- Upcoming Activities Card -->
+          <div class="card p-6 flex items-center justify-between">
+            <div>
+              <div class="text-yellow-600 text-lg font-semibold">Upcoming Activities</div>
+              <div class="text-4xl font-bold text-gray-900 mt-1">${activities.filter(a => new Date(a['End Date']) > new Date() && a.Status === 'Pending').length}</div>
+            </div>
+            <span class="text-yellow-500" data-lucide="calendar-check" style="width:48px; height:48px;"></span>
+          </div>
+
+          <!-- Total Documents Card -->
+          <div class="card p-6 flex items-center justify-between">
+            <div>
+              <div class="text-red-600 text-lg font-semibold">Total Documents</div>
+              <div class="text-4xl font-bold text-gray-900 mt-1">${documents.length}</div>
+            </div>
+            <span class="text-red-500" data-lucide="folder-dot" style="width:48px; height:48px;"></span>
+          </div>
+
+          <!-- Total Media Files Card -->
+          <div class="card p-6 flex items-center justify-between">
+            <div>
+              <div class="text-teal-600 text-lg font-semibold">Total Media Files</div>
+              <div class="text-4xl font-bold text-gray-900 mt-1">${media.length}</div>
+            </div>
+            <span class="text-teal-500" data-lucide="image" style="width:48px; height:48px;"></span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Contracts by Status Chart -->
+            <div class="card p-6">
+                <h3 class="text-xl font-semibold mb-4 text-gray-800">Contracts by Status</h3>
+                <div class="relative h-64 sm:h-72 md:h-80">
+                  <canvas id="contractStatusChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Contracts by Lead Engineer Chart -->
+            <div class="card p-6">
+                <h3 class="text-xl font-semibold mb-4 text-gray-800">Contracts by Lead Engineer</h3>
+                <div class="relative h-64 sm:h-72 md:h-80">
+                  <canvas id="leadEngineerChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Contract Value by Status Chart -->
+            <div class="card p-6 lg:col-span-2">
+                <h3 class="text-xl font-semibold mb-4 text-gray-800">Contract Value by Status</h3>
+                <div class="relative h-72 sm:h-80 md:h-96">
+                    <canvas id="contractValueStatusChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contract Value by Status Table -->
+        <div class="card p-6 mt-6">
+            <h3 class="text-xl font-semibold mb-4 text-gray-800 flex items-center">
+              <span class="mr-2" data-lucide="clipboard-check"></span>Contract Value by Status Summary
+            </h3>
+            <div class="overflow-x-auto">
+                <table class="w-full table-auto">
+                    <thead>
+                        <tr>
+                            <th class="py-2 px-3">Status</th>
+                            <th class="py-2 px-3 text-right">Total Value (AED)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="contract-value-by-status-body">
+                        <!-- Data will be inserted here by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Recently Completed Contracts Section -->
+        <div class="card p-6 mt-6">
+            <h3 class="text-xl font-semibold mb-4 text-gray-800 flex items-center">
+              <span class="mr-2" data-lucide="check-circle"></span>Recently Completed Contracts
+            </h3>
+            <div class="overflow-x-auto">
+                <table class="w-full table-auto">
+                    <thead>
+                        <tr>
+                            <th class="py-2 px-3">Contract ID</th>
+                            <th class="py-2 px-3">Project Name</th>
+                            <th class="py-2 px-3">Client</th>
+                            <th class="py-2 px-3">End Date</th>
+                            <th class="py-2 px-3">Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recently-completed-contracts-body">
+                        <!-- Data will be inserted here by JS -->
+                    </tbody>
+                    <tbody id="more-completed-contracts-body" class="hidden">
+                         <!-- More data will be inserted here by JS if available -->
+                    </tbody>
+                </table>
+                <div id="recently-completed-contracts-toggle-button-container" class="text-center mt-4">
+                    <!-- Toggle button will be inserted here by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Activities Section -->
+        <div class="card p-6 mt-6">
+            <h3 class="text-xl font-semibold mb-4 text-gray-800 flex items-center">
+              <span class="mr-2" data-lucide="hourglass"></span>Pending Activities
+            </h3>
+            <div class="overflow-x-auto">
+                <table class="w-full table-auto">
+                    <thead>
+                        <tr>
+                            <th class="py-2 px-3">Activity ID</th>
+                            <th class="py-2 px-3">Contract ID</th>
+                            <th class="py-2 px-3">Activity Name</th>
+                            <th class="py-2 px-3">End Date</th>
+                            <th class="py-2 px-3">Assigned To</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pending-activities-body">
+                        <!-- Data will be inserted here by JS -->
+                    </tbody>
+                    <tbody id="more-pending-activities-body" class="hidden">
+                        <!-- More data will be inserted here by JS if available -->
+                    </tbody>
+                </table>
+                <div id="pending-activities-toggle-button-container" class="text-center mt-4">
+                    <!-- Toggle button will be inserted here by JS -->
+                </div>
+            </div>
+        </div>
+      `;
+
+      // Render Lucide icons for the static content of the home page
+      if (typeof lucide !== 'undefined') {
+          lucide.createIcons();
+      }
+
+      renderContractStatusChart();
+      renderLeadEngineerChart();
+      renderContractValueStatusChart();
+      renderContractValueByStatusTable(); // Call new function to render the table
+      renderRecentlyCompletedContracts();
+      renderPendingActivities();
+    }
+
+    function renderContractStatusChart() {
+      const statusCounts = contracts.reduce((acc, contract) => {
+        acc[contract.Status] = (acc[contract.Status] || 0) + 1;
+        return acc;
+      }, {});
+
+      const labels = Object.keys(statusCounts);
+      const data = Object.values(statusCounts);
+      // New distinct colors for the pie chart
+      const backgroundColors = [
+        '#60A5FA', // blue-400
+        '#F87171', // red-400
+        '#34D399', // emerald-400
+        '#FBBF24', // amber-400
+        '#A78BFA', // violet-400
+        '#7DD3FC'  // light blue-300
+      ];
+      const colors = labels.map((_, index) => backgroundColors[index % backgroundColors.length]);
+
+      const ctx = document.getElementById('contractStatusChart').getContext('2d');
+      if (myCharts.contractStatusChart) myCharts.contractStatusChart.destroy();
+      myCharts.contractStatusChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: data,
+            backgroundColor: colors,
+            hoverOffset: 4
+          }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                datalabels: {
+                    color: '#fff',
+                    formatter: (value, context) => {
+                        const total = context.chart.data.datasets[0].data.reduce((sum, val) => sum + val, 0);
+                        const percentage = (value / total * 100).toFixed(0) + '%';
+                        return percentage;
+                    },
+                    font: {
+                        weight: 'bold',
+                        size: 10
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            label += context.raw;
+                            return label;
+                        }
+                    }
+                }
+            }
+        },
+        plugins: [ChartDataLabels]
+      });
+    }
+
+    function renderLeadEngineerChart() {
+      const engineerCounts = contracts.reduce((acc, contract) => {
+        acc[contract['Lead Engineer']] = (acc[contract['Lead Engineer'] || 'N/A'] || 0) + 1; // Handle potential undefined/null engineer
+        return acc;
+      }, {});
+
+      const labels = Object.keys(engineerCounts);
+      // Define a more diverse set of Tailwind-inspired colors
+      const allColors = [
+        '#065F46', '#1E40AF', '#8B5CF6', '#EC4899', '#EF4444',
+        '#F59E0B', '#10B981', '#3B82F6', '#D946EF', '#F87171',
+        '#FBBF24', '#047857', '#2563EB', '#6D28D9', '#DB2777'
+      ];
+      // Assign colors cyclically to labels
+      const colors = labels.map((_, index) => allColors[index % allColors.length]);
+
+
+      const data = Object.values(engineerCounts);
+
+      const ctx = document.getElementById('leadEngineerChart').getContext('2d');
+      if (myCharts.leadEngineerChart) myCharts.leadEngineerChart.destroy();
+      myCharts.leadEngineerChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Number of Contracts',
+            data: data,
+            backgroundColor: colors, // Apply diverse colors
+            borderColor: colors.map(c => c), // Use same color for border for simplicity
+            borderWidth: 1
+          }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y', // Make it a horizontal bar chart
+            plugins: {
+                legend: {
+                    display: false
+                },
+                datalabels: {
+                    anchor: 'end',
+                    align: 'end',
+                    color: '#4A5568', // text-gray-700
+                    font: {
+                        weight: 'bold',
+                        size: 10
+                    },
+                    formatter: (value) => value
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: {
+                        font: {
+                            size: 10
+                        }
+                    }
+                },
+                y: {
+                    ticks: {
+                        font: {
+                            size: 10
+                        }
+                    }
+                }
+            }
+        },
+        plugins: [ChartDataLabels]
+      });
+    }
+
+    function renderContractValueStatusChart() {
+        const statusValues = contracts.reduce((acc, contract) => {
+            acc[contract.Status] = (acc[contract.Status] || 0) + (contract['Value'] || 0);
+            return acc;
+        }, {});
+
+        const labels = Object.keys(statusValues);
+        const data = Object.values(statusValues);
+        const backgroundColors = {
+            'Active': '#06B6D4',    // cyan-500
+            'Completed': '#6D28D9', // violet-700
+            'Pending': '#FACC15'    // amber-400
+        };
+        const colors = labels.map(label => backgroundColors[label] || '#6B7280'); // Default to gray if status not mapped
+
+
+        const ctx = document.getElementById('contractValueStatusChart').getContext('2d');
+        if (myCharts.contractValueStatusChart) myCharts.contractValueStatusChart.destroy();
+        myCharts.contractValueStatusChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Total Value (AED)',
+                    data: data,
+                    backgroundColor: colors,
+                    borderColor: colors.map(c => c),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    datalabels: {
+                        anchor: 'end',
+                        align: 'top',
+                        color: '#4A5568',
+                        font: {
+                            weight: 'bold',
+                            size: 10
+                        },
+                        formatter: (value) => formatCurrency(value) // Format the value
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                label += formatCurrency(context.raw);
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            font: {
+                                size: 10
+                            }
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return formatCurrency(value); // Format y-axis labels
+                            },
+                            font: {
+                                size: 10
+                            }
+                        }
+                    }
+                }
+            },
+            plugins: [ChartDataLabels]
+        });
+    }
+
+    function renderContractValueByStatusTable() {
+        const statusValues = contracts.reduce((acc, contract) => {
+            acc[contract.Status] = (acc[contract.Status] || 0) + (contract['Value'] || 0);
+            return acc;
+        }, {});
+
+        // Convert the object to an array of {status, value} pairs for easier sorting and rendering
+        const tableData = Object.keys(statusValues).map(status => ({
+            status: status,
+            value: statusValues[status]
+        })).sort((a, b) => b.value - a.value); // Sort by value descending
+
+        const tbody = document.getElementById('contract-value-by-status-body');
+        if (!tbody) return;
+
+        tbody.innerHTML = ''; // Clear existing rows
+
+        if (tableData.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="2" class="text-center py-4 text-gray-500">No contract value data available.</td></tr>';
+            return;
+        }
+
+        tableData.forEach(item => {
+            const row = document.createElement('tr');
+            row.className = 'border-b border-gray-200 last:border-b-0 hover:bg-blue-50';
+            row.innerHTML = `
+                <td class="py-2 px-3">${item.status}</td>
+                <td class="py-2 px-3 text-right font-semibold">${formatCurrency(item.value)}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    function renderRecentlyCompletedContracts() {
+      const completedContracts = contracts
+        .filter(c => c.Status && String(c.Status).trim().toLowerCase() === 'completed') // Ensure case-insensitive match
+        .sort((a, b) => {
+            const dateA = (b['End Date'] instanceof Date) ? b['End Date'] : new Date(b['End Date']);
+            const dateB = (a['End Date'] instanceof Date) ? a['End Date'] : new Date(a['End Date']);
+            if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) return 0;
+            if (isNaN(dateA.getTime())) return 1;
+            if (isNaN(dateB.getTime())) return -1;
+            return dateA.getTime() - dateB.getTime(); // Compare timestamps
+        });
+
+      const tbody = document.getElementById('recently-completed-contracts-body');
+      const moreTbody = document.getElementById('more-completed-contracts-body');
+      const toggleButtonContainer = document.getElementById('recently-completed-contracts-toggle-button-container');
+
+      if (!tbody || !moreTbody || !toggleButtonContainer) return;
+
+      tbody.innerHTML = '';
+      moreTbody.innerHTML = ''; // Clear both bodies
+
+      if (completedContracts.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">No recently completed contracts.</td></tr>';
+        toggleButtonContainer.innerHTML = ''; // Clear button if no contracts
+        return;
+      }
+
+      const initialRows = completedContracts.slice(0, 3);
+      const remainingRows = completedContracts.slice(3);
+
+      initialRows.forEach(contract => {
+        const row = document.createElement('tr');
+        row.className = 'border-b border-gray-200 last:border-b-0 hover:bg-blue-50';
+        row.innerHTML = `
+          <td class="py-2 px-3 whitespace-nowrap">
+            <a href="javascript:void(0)" onclick="showPage('contracts', null, '${contract['Contract ID']}')" class="text-blue-600 hover:underline font-medium">
+                ${contract['Contract ID']}
+            </a>
+          </td>
+          <td class="py-2 px-3">${contract['Project Name']}</td>
+          <td class="py-2 px-3">${contract.Client}</td>
+          <td class="py-2 px-3">${formatDate(contract['End Date'])}</td>
+          <td class="py-2 px-3 font-semibold text-right">${formatCurrency(contract['Value'])}</td>
+        `;
+        tbody.appendChild(row);
+      });
+
+      if (remainingRows.length > 0) {
+        remainingRows.forEach(contract => {
+          const row = document.createElement('tr');
+          row.className = 'border-b border-gray-200 last:border-b-0 hover:bg-blue-50';
+          row.innerHTML = `
+            <td class="py-2 px-3 whitespace-nowrap">
+              <a href="javascript:void(0)" onclick="showPage('contracts', null, '${contract['Contract ID']}')" class="text-blue-600 hover:underline font-medium">
+                  ${contract['Contract ID']}
+              </a>
+            </td>
+            <td class="py-2 px-3">${contract['Project Name']}</td>
+            <td class="py-2 px-3">${contract.Client}</td>
+            <td class="py-2 px-3">${formatDate(contract['End Date'])}</td>
+            <td class="py-2 px-3 font-semibold text-right">${formatCurrency(contract['Value'])}</td>
+          `;
+          moreTbody.appendChild(row);
+        });
+
+        // Add toggle button
+        toggleButtonContainer.innerHTML = `
+            <button id="recently-completed-toggle-button" onclick="toggleTableRows('more-completed-contracts-body', this, ${remainingRows.length})"
+                    class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg mt-4 inline-flex items-center text-sm">
+                <span class="mr-1" data-lucide="plus"></span>Show ${remainingRows.length} more...
+            </button>
+        `;
+      } else {
+        toggleButtonContainer.innerHTML = ''; // No button needed if all rows are displayed initially
+      }
+    }
+
+    function renderPendingActivities() {
+      const pendingActivities = activities
+        .filter(a => {
+            const isPending = a.Status && String(a.Status).trim().toLowerCase() === 'pending'; // Ensure case-insensitive match
+            return isPending;
+        })
+        .sort((a, b) => {
+            const dateA = (a['End Date'] instanceof Date) ? a['End Date'] : new Date(a['End Date']);
+            const dateB = (b['End Date'] instanceof Date) ? b['End Date'] : new Date(b['End Date']);
+
+            if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) return 0;
+            if (isNaN(dateA.getTime())) return 1;
+            if (isNaN(dateB.getTime())) return -1;
+
+            return dateA.getTime() - dateB.getTime(); // Compare timestamps
+        });
+
+      const tbody = document.getElementById('pending-activities-body');
+      const moreTbody = document.getElementById('more-pending-activities-body');
+      const toggleButtonContainer = document.getElementById('pending-activities-toggle-button-container');
+
+      if (!tbody || !moreTbody || !toggleButtonContainer) return;
+
+      tbody.innerHTML = '';
+      moreTbody.innerHTML = ''; // Clear both bodies
+
+      if (pendingActivities.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">No pending activities.</td></tr>';
+        toggleButtonContainer.innerHTML = ''; // Clear button if no activities
+        return;
+      }
+
+      const initialActivities = pendingActivities.slice(0, 3);
+      const remainingActivities = pendingActivities.slice(3);
+
+      initialActivities.forEach(activity => {
+        const row = document.createElement('tr');
+        row.className = 'border-b border-gray-200 last:border-b-0 hover:bg-yellow-50';
+        row.innerHTML = `
+          <td class="py-2 px-3 whitespace-nowrap">${activity['Activity ID']}</td>
+          <td class="py-2 px-3 whitespace-nowrap">
+            <a href="javascript:void(0)" onclick="showPage('contracts', null, '${activity['Contract ID']}')" class="text-blue-600 hover:underline font-medium">
+              ${activity['Contract ID']}
+            </a>
+          </td>
+          <td class="py-2 px-3">${activity['Activity Name']}</td>
+          <td class="py-2 px-3">${formatDate(activity['End Date'])}</td>
+          <td class="py-2 px-3">${activity['Assigned To']}</td>
+        `;
+        tbody.appendChild(row);
+      });
+
+      if (remainingActivities.length > 0) {
+        remainingActivities.forEach(activity => {
+          const row = document.createElement('tr');
+          row.className = 'border-b border-gray-200 last:border-b-0 hover:bg-yellow-50';
+          row.innerHTML = `
+            <td class="py-2 px-3 whitespace-nowrap">${activity['Activity ID']}</td>
+            <td class="py-2 px-3 whitespace-nowrap">
+              <a href="javascript:void(0)" onclick="showPage('contracts', null, '${activity['Contract ID']}')" class="text-blue-600 hover:underline font-medium">
+                ${activity['Contract ID']}
+              </a>
+            </td>
+            <td class="py-2 px-3">${activity['Activity Name']}</td>
+            <td class="py-2 px-3">${formatDate(activity['End Date'])}</td>
+            <td class="py-2 px-3">${activity['Assigned To']}</td>
+          `;
+          moreTbody.appendChild(row);
+        });
+
+        // Add toggle button
+        toggleButtonContainer.innerHTML = `
+            <button id="pending-activities-toggle-button" onclick="toggleTableRows('more-pending-activities-body', this, ${remainingActivities.length})"
+                    class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg mt-4 inline-flex items-center text-sm">
+                <span class="mr-1" data-lucide="plus"></span>Show ${remainingActivities.length} more...
+            </button>
+        `;
+      } else {
+        toggleButtonContainer.innerHTML = ''; // No button needed
+      }
+    }
+
+
+    // Contracts Page Renderer
+    function renderContractsPage(contractId = null) {
+      const appContent = document.getElementById('app-content');
+
+      if (contractId) {
+        // Render single contract detail
+        const contract = contracts.find(c => c['Contract ID'] === contractId);
+        if (!contract) {
+          appContent.innerHTML = `<div class="card p-6 text-center text-red-500 mt-8">Contract with ID "${contractId}" not found. <button onclick="showPage('contracts')" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg mt-4 flex items-center text-sm mx-auto"><span class="mr-1" data-lucide="arrow-left"></span>Back to Contracts List</button></div>`;
+          // Render Lucide icon for the back button
+          if (typeof lucide !== 'undefined') {
+              lucide.createIcons();
+          }
+          return;
+        }
+
+        const contractActivities = activities.filter(a => a['Contract ID'] === contractId);
+        const contractDocuments = documents.filter(d => d['Contract ID'] === contractId);
+        const contractMedia = media.filter(m => m['Contract ID'] === contractId);
+
+        appContent.innerHTML = `
+          <div class="mb-4">
+            <button onclick="showPage('contracts')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg flex items-center text-sm">
+              <span class="mr-1" data-lucide="arrow-left"></span>Back to Contracts List
+            </button>
+          </div>
+          <div class="card p-6 mb-6">
+            <h2 class="text-2xl font-bold text-blue-800 mb-4 flex items-center">
+              <span class="mr-2" data-lucide="clipboard-list"></span>Contract: ${contract['Contract ID']} - ${contract['Project Name']}
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-base">
+              <p><strong>Client:</strong> ${contract.Client}</p>
+              <p><strong>Lead Engineer:</strong> ${contract['Lead Engineer']}</p>
+              <p><strong>Start Date:</strong> ${formatDate(contract['Start Date'])}</p>
+              <p><strong>End Date:</strong> ${formatDate(contract['End Date'])}</p>
+              <p><strong>Value:</strong> <span class="font-bold text-green-700">${formatCurrency(contract['Value'])}</span></p>
+              <p><strong>Status:</strong> <span class="font-bold ${contract.Status === 'Active' ? 'text-green-600' : contract.Status === 'Completed' ? 'text-blue-600' : 'text-yellow-600'}">${contract.Status}</span></p>
+            </div>
+            <!-- New button to view progress photos for this contract -->
+            <div class="mt-6">
+                <button onclick="showPage('progress-photos', null, '${contract['Contract ID']}')"
+                        class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg flex items-center text-sm">
+                    <span class="mr-1" data-lucide="camera"></span>View Progress Photos
+                </button>
+            </div>
+          </div>
+
+          <!-- Activities Section -->
+          <div class="card p-6 mb-6">
+            <h3 class="text-xl font-semibold mb-4 text-gray-800 flex items-center">
+              <span class="mr-2" data-lucide="activity"></span>Activities for this Contract
+            </h3>
+            <div class="overflow-x-auto">
+              <table class="w-full table-auto">
+                <thead>
+                  <tr>
+                    <th class="py-2 px-3">Activity ID</th>
+                    <th class="py-2 px-3">Activity Name</th>
+                    <th class="py-2 px-3">Start Date</th>
+                    <th class="py-2 px-3">End Date</th>
+                    <th class="py-2 px-3">Status</th>
+                    <th class="py-2 px-3">Assigned To</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${contractActivities.length > 0 ? contractActivities.map(a => `
+                    <tr class="border-b border-gray-200 last:border-b-0 hover:bg-gray-50">
+                      <td class="py-2 px-3 whitespace-nowrap">${a['Activity ID']}</td>
+                      <td class="py-2 px-3">${a['Activity Name']}</td>
+                      <td class="py-2 px-3">${formatDate(a['Start Date'])}</td>
+                      <td class="py-2 px-3">${formatDate(a['End Date'])}</td>
+                      <td class="py-2 px-3"><span class="px-2 py-1 rounded-full text-xs font-semibold ${a.Status === 'Completed' ? 'bg-blue-100 text-blue-800' : a.Status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${a.Status}</span></td>
+                      <td class="py-2 px-3">${a['Assigned To']}</td>
+                    </tr>
+                  `).join('') : '<tr><td colspan="6" class="text-center py-4 text-gray-500">No activities for this contract.</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Documents Section -->
+          <div class="card p-6 mb-6">
+            <h3 class="text-xl font-semibold mb-4 text-gray-800 flex items-center">
+              <span class="mr-2" data-lucide="folder-dot"></span>Documents for this Contract
+            </h3>
+            <div class="overflow-x-auto">
+              <table class="w-full table-auto">
+                <thead>
+                  <tr>
+                    <th class="py-2 px-3">Document ID</th>
+                    <th class="py-2 px-3">Document Name</th>
+                    <th class="py-2 px-3">Document Type</th>
+                    <th class="py-2 px-3">Upload Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${contractDocuments.length > 0 ? contractDocuments.map(d => `
+                    <tr class="border-b border-gray-200 last:border-b-0 hover:bg-gray-50">
+                      <td class="py-2 px-3 whitespace-nowrap">${d['Document ID']}</td>
+                      <td class="py-2 px-3">
+                          <a href="${d['FilePathOrURL']}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline font-medium">
+                              ${d['Document Name']}
+                          </a>
+                      </td>
+                      <td class="py-2 px-3">${d['Document Type']}</td>
+                      <td class="py-2 px-3">${formatDate(d['Upload Date'])}</td>
+                    </tr>
+                  `).join('') : '<tr><td colspan="4" class="text-center py-4 text-gray-500">No documents for this contract.</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Media Section -->
+          <div class="card p-6">
+            <h3 class="text-xl font-semibold mb-4 text-gray-800 flex items-center">
+              <span class="mr-2" data-lucide="image"></span>Media for this Contract
+            </h3>
+            <div class="overflow-x-auto">
+              <table class="w-full table-auto">
+                <thead>
+                  <tr>
+                    <th class="py-2 px-3">Media ID</th>
+                    <th class="py-2 px-3">File Name</th>
+                    <th class="py-2 px-3">File Type</th>
+                    <th class="py-2 px-3">Upload Date</th>
+                    <th class="py-2 px-3">Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${contractMedia.length > 0 ? contractMedia.map(m => `
+                    <tr class="border-b border-gray-200 last:border-b-0 hover:bg-gray-50">
+                      <td class="py-2 px-3 whitespace-nowrap">${m['Media ID']}</td>
+                      <td class="py-2 px-3">${m['File Name']}</td>
+                      <td class="py-2 px-3">${m['File Type']}</td>
+                      <td class="py-2 px-3">${formatDate(m['Upload Date'])}</td>
+                      <td class="py-2 px-3">${m.Description}</td>
+                    </tr>
+                  `).join('') : '<tr><td colspan="5" class="text-center py-4 text-gray-500">No media files for this contract.</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      } else {
+        // Collect unique statuses for the contract status filter dropdown
+        const uniqueContractStatuses = [...new Set(contracts.map(c => String(c.Status).trim()))].sort();
+        const contractStatusOptions = uniqueContractStatuses.map(status => `<option value="${status}">${status}</option>`).join('');
+
+        // Collect unique engineers for the contract engineer filter dropdown
+        const uniqueContractEngineers = [...new Set(contracts.map(c => String(c['Lead Engineer']).trim()))].sort();
+        const contractEngineerOptions = uniqueContractEngineers.map(engineer => `<option value="${engineer}">${engineer}</option>`).join('');
+
+
+        // Render contracts list
+        appContent.innerHTML = `
+          <div class="card p-6">
+            <h2 class="text-2xl font-bold text-blue-800 mb-4 flex items-center">
+              <span class="mr-2" data-lucide="clipboard-list"></span>All Contracts
+            </h2>
+            <div class="mb-4 flex flex-col sm:flex-row gap-2">
+              <input type="text" id="contractSearch" placeholder="Search contracts..." class="p-2 border border-gray-300 rounded-md flex-grow text-sm focus:ring-2 focus:ring-blue-300">
+              <select id="contractStatusFilter" class="p-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-300">
+                <option value="">All Statuses</option>
+                ${contractStatusOptions}
+              </select>
+              <select id="contractEngineerFilter" class="p-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-300">
+                <option value="">All Engineers</option>
+                ${contractEngineerOptions}
+              </select>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full table-auto">
+                <thead>
+                  <tr>
+                    <th class="py-2 px-3 cursor-pointer" onclick="sortContracts('Contract ID')">ID ${renderSortIcon('Contract ID')}</th>
+                    <th class="py-2 px-3 cursor-pointer" onclick="sortContracts('Project Name')">Project Name ${renderSortIcon('Project Name')}</th>
+                    <th class="py-2 px-3 cursor-pointer" onclick="sortContracts('Client')">Client ${renderSortIcon('Client')}</th>
+                    <th class="py-2 px-3 cursor-pointer" onclick="sortContracts('Start Date')">Start Date ${renderSortIcon('Start Date')}</th>
+                    <th class="py-2 px-3 cursor-pointer" onclick="sortContracts('End Date')">End Date ${renderSortIcon('End Date')}</th>
+                    <th class="py-2 px-3 cursor-pointer" onclick="sortContracts('Value')">Value ${renderSortIcon('Value')}</th>
+                    <th class="py-2 px-3 cursor-pointer" onclick="sortContracts('Status')">Status ${renderSortIcon('Status')}</th>
+                    <th class="py-2 px-3 cursor-pointer" onclick="sortContracts('Lead Engineer')">Lead Engineer ${renderSortIcon('Lead Engineer')}</th>
+                  </tr>
+                </thead>
+                <tbody id="contracts-table-body">
+                  <!-- Contracts will be rendered here by renderContractsTable -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      }
+
+      // Re-render Lucide icons for the entire appContent after new HTML is injected
+      if (typeof lucide !== 'undefined') {
+          lucide.createIcons();
+      }
+
+      if (!contractId) {
+        renderContractsTable(); // Initial render of the table if not viewing details
+      }
+    }
+
+
+    // Activities Page Renderer
+    function renderActivitiesPage() {
+      const appContent = document.getElementById('app-content');
+
+      // Collect unique statuses for the activity status filter dropdown
+      const uniqueActivityStatuses = [...new Set(activities.map(a => String(a.Status).trim()))].sort();
+      const activityStatusOptions = uniqueActivityStatuses.map(status => `<option value="${status}">${status}</option>`).join('');
+
+      // Collect unique contract IDs for the activity contract filter dropdown
+      const uniqueActivityContracts = [...new Set(activities.map(a => String(a['Contract ID']).trim()))].sort();
+      const activityContractOptions = uniqueActivityContracts.map(contractId => `<option value="${contractId}">${contractId}</option>`).join('');
+
+      appContent.innerHTML = `
+        <div class="card p-6">
+          <h2 class="text-2xl font-bold text-blue-800 mb-4 flex items-center">
+            <span class="mr-2" data-lucide="activity"></span>All Activities
+          </h2>
+          <div class="mb-4 flex flex-col sm:flex-row gap-2">
+            <input type="text" id="activitySearch" placeholder="Search activities..." class="p-2 border border-gray-300 rounded-md flex-grow text-sm focus:ring-2 focus:ring-blue-300">
+            <select id="activityStatusFilter" class="p-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-300">
+              <option value="">All Statuses</option>
+              ${activityStatusOptions}
+            </select>
+            <select id="activityContractFilter" class="p-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-300">
+              <option value="">All Contracts</option>
+              ${activityContractOptions}
+            </select>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full table-auto">
+              <thead>
+                <tr>
+                  <th class="py-2 px-3 cursor-pointer" onclick="sortActivities('Activity ID')">ID ${renderSortIconActivity('Activity ID')}</th>
+                  <th class="py-2 px-3 cursor-pointer" onclick="sortActivities('Contract ID')">Contract ID ${renderSortIconActivity('Contract ID')}</th>
+                  <th class="py-2 px-3 cursor-pointer" onclick="sortActivities('Activity Name')">Activity Name ${renderSortIconActivity('Activity Name')}</th>
+                  <th class="py-2 px-3 cursor-pointer" onclick="sortActivities('Start Date')">Start Date ${renderSortIconActivity('Start Date')}</th>
+                  <th class="py-2 px-3 cursor-pointer" onclick="sortActivities('End Date')">End Date ${renderSortIconActivity('End Date')}</th>
+                  <th class="py-2 px-3 cursor-pointer" onclick="sortActivities('Status')">Status ${renderSortIconActivity('Status')}</th>
+                  <th class="py-2 px-3 cursor-pointer" onclick="sortActivities('Assigned To')">Assigned To ${renderSortIconActivity('Assigned To')}</th>
+                </tr>
+              </thead>
+              <tbody id="activities-table-body">
+                <!-- Activities will be rendered here by renderActivitiesTable -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      // Re-render Lucide icons for the entire appContent after new HTML is injected
+      if (typeof lucide !== 'undefined') {
+          lucide.createIcons();
+      }
+
+      renderActivitiesTable();
+    }
+
+
+    // Documents Page Renderer
+    function renderDocumentsPage() {
+      const appContent = document.getElementById('app-content');
+
+      // Collect unique document types for the document type filter dropdown
+      const uniqueDocumentTypes = [...new Set(documents.map(d => String(d['Document Type']).trim()))].sort();
+      const documentTypeOptions = uniqueDocumentTypes.map(type => `<option value="${type}">${type}</option>`).join('');
+
+      // Collect unique contract IDs for the document contract filter dropdown
+      const uniqueDocumentContracts = [...new Set(documents.map(d => String(d['Contract ID']).trim()))].sort();
+      const documentContractOptions = uniqueDocumentContracts.map(contractId => `<option value="${contractId}">${contractId}</option>`).join('');
+
+      appContent.innerHTML = `
+        <div class="card p-6">
+          <h2 class="text-2xl font-bold text-blue-800 mb-4 flex items-center">
+            <span class="mr-2" data-lucide="folder-dot"></span>All Documents
+          </h2>
+          <div class="mb-4 flex flex-col sm:flex-row gap-2">
+            <input type="text" id="documentSearch" placeholder="Search documents..." class="p-2 border border-gray-300 rounded-md flex-grow text-sm focus:ring-2 focus:ring-blue-300">
+            <select id="documentTypeFilter" class="p-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-300">
+              <option value="">All Types</option>
+              ${documentTypeOptions}
+            </select>
+            <select id="documentContractFilter" class="p-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-300">
+              <option value="">All Contracts</option>
+              ${documentContractOptions}
+            </select>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full table-auto">
+              <thead>
+                <tr>
+                  <th class="py-2 px-3 cursor-pointer" onclick="sortDocuments('Document ID')">ID ${renderSortIconDocument('Document ID')}</th>
+                  <th class="py-2 px-3 cursor-pointer" onclick="sortDocuments('Contract ID')">Contract ID ${renderSortIconDocument('Contract ID')}</th>
+                  <th class="py-2 px-3 cursor-pointer" onclick="sortDocuments('Document Name')">Document Name ${renderSortIconDocument('Document Name')}</th>
+                  <th class="py-2 px-3 cursor-pointer" onclick="sortDocuments('Document Type')">Document Type ${renderSortIconDocument('Document Type')}</th>
+                  <th class="py-2 px-3 cursor-pointer" onclick="sortDocuments('Upload Date')">Upload Date ${renderSortIconDocument('Upload Date')}</th>
+                </tr>
+              </thead>
+              <tbody id="documents-table-body">
+                <!-- Documents will be rendered here by renderDocumentsTable -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      // Re-render Lucide icons for the entire appContent after new HTML is injected
+      if (typeof lucide !== 'undefined') {
+          lucide.createIcons();
+      }
+
+      renderDocumentsTable();
+    }
+
+
+    // Media Page Renderer
+    function renderMediaPage() {
+      const appContent = document.getElementById('app-content');
+
+      // Collect unique file types for the media type filter dropdown
+      const uniqueMediaTypes = [...new Set(media.map(m => String(m['File Type']).trim()))].sort();
+      const mediaTypeOptions = uniqueMediaTypes.map(type => `<option value="${type}">${type}</option>`).join('');
+
+      // Collect unique contract IDs for the media contract filter dropdown
+      const uniqueMediaContracts = [...new Set(media.map(m => String(m['Contract ID']).trim()))].sort();
+      const mediaContractOptions = uniqueMediaContracts.map(contractId => `<option value="${contractId}">${contractId}</option>`).join('');
+
+      appContent.innerHTML = `
+        <div class="card p-6">
+          <h2 class="text-2xl font-bold text-blue-800 mb-4 flex items-center">
+            <span class="mr-2" data-lucide="image"></span>All Media Files
+          </h2>
+          <div class="mb-4 flex flex-col sm:flex-row gap-2">
+            <input type="text" id="mediaSearch" placeholder="Search media..." class="p-2 border border-gray-300 rounded-md flex-grow text-sm focus:ring-2 focus:ring-blue-300">
+            <select id="mediaTypeFilter" class="p-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-300">
+              <option value="">All Types</option>
+              ${mediaTypeOptions}
+            </select>
+            <select id="mediaContractFilter" class="p-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-300">
+              <option value="">All Contracts</option>
+              ${mediaContractOptions}
+            </select>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full table-auto">
+              <thead>
+                <tr>
+                  <th class="py-2 px-3 cursor-pointer" onclick="sortMedia('Media ID')">ID ${renderSortIconMedia('Media ID')}</th>
+                  <th class="py-2 px-3 cursor-pointer" onclick="sortMedia('Contract ID')">Contract ID ${renderSortIconMedia('Contract ID')}</th>
+                  <th class="py-2 px-3 cursor-pointer" onclick="sortMedia('File Name')">File Name ${renderSortIconMedia('File Name')}</th>
+                  <th class="py-2 px-3 cursor-pointer" onclick="sortMedia('File Type')">File Type ${renderSortIconMedia('File Type')}</th>
+                  <th class="py-2 px-3 cursor-pointer" onclick="sortMedia('Upload Date')">Upload Date ${renderSortIconMedia('Upload Date')}</th>
+                  <th class="py-2 px-3 cursor-pointer" onclick="sortMedia('Description')">Description ${renderSortIconMedia('Description')}</th>
+                </tr>
+              </thead>
+              <tbody id="media-table-body">
+                <!-- Media will be rendered here by renderMediaTable -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      // Re-render Lucide icons for the entire appContent after new HTML is injected
+      if (typeof lucide !== 'undefined') {
+          lucide.createIcons();
+      }
+
+      renderMediaTable();
+    }
+
+    /**
+     * Renders the Progress Photos page, handling different levels of navigation (contracts, years, months, weeks, gallery).
+     * @param {string} [contractId] Optional Contract ID to filter photos.
+     * @param {string} [year] Optional Year to filter photos.
+     * @param {string} [month] Optional Month (full name) to filter photos.
+     * @param {string} [week] Optional Week number to filter photos.
+     */
+    function renderProgressPhotosPage(contractId = null, year = null, month = null, week = null) {
+        const appContent = document.getElementById('app-content');
+        appContent.innerHTML = ''; // Clear content
+
+        let html = '<div class="card p-6">';
+        html += `<h2 class="text-2xl font-bold text-blue-800 mb-4 flex items-center">
+                    <span class="mr-2" data-lucide="camera"></span>Progress Photographs
+                </h2>`;
+
+        // Breadcrumbs/Navigation
+        html += `<nav class="text-sm font-medium text-gray-500 mb-4">
+                    <a href="javascript:void(0)" onclick="showPage('progress-photos')" class="text-blue-600 hover:underline">All Contracts</a>`;
+        if (contractId) {
+            html += `<span class="mx-2">/</span>
+                     <a href="javascript:void(0)" onclick="showPage('progress-photos', null, '${contractId}')" class="text-blue-600 hover:underline">${contractId}</a>`;
+        }
+        if (year) {
+            html += `<span class="mx-2">/</span>
+                     <a href="javascript:void(0)" onclick="showPage('progress-photos', null, '${contractId}', '${year}')" class="text-blue-600 hover:underline">${year}</a>`;
+        }
+        if (month) {
+            html += `<span class="mx-2">/</span>
+                     <a href="javascript:void(0)" onclick="showPage('progress-photos', null, '${contractId}', '${year}', '${month}')" class="text-blue-600 hover:underline">${month}</a>`;
+        }
+        if (week) {
+            html += `<span class="mx-2">/</span>
+                     <span class="text-gray-700">Week ${week}</span>`;
+        }
+        html += `</nav>`;
+
+
+        if (!contractId) {
+            // Display list of contracts with photos
+            const contractsWithPhotos = Object.keys(progressPhotosData).sort();
+            if (contractsWithPhotos.length === 0) {
+                html += `<p class="text-center py-4 text-gray-500">No contracts with progress photos available.</p>`;
+            } else {
+                html += `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">`;
+                contractsWithPhotos.forEach(cid => {
+                    const contract = contracts.find(c => c['Contract ID'] === cid);
+                    const projectName = contract ? contract['Project Name'] : 'Unknown Project';
+                    html += `
+                        <div class="card p-4 hover:shadow-lg transition-shadow duration-200">
+                            <a href="javascript:void(0)" onclick="showPage('progress-photos', null, '${cid}')" class="block text-blue-700 hover:underline font-semibold">
+                                <h3 class="text-lg">${cid}</h3>
+                                <p class="text-sm text-gray-600">${projectName}</p>
+                            </a>
+                        </div>`;
+                });
+                html += `</div>`;
+            }
+        } else if (!year) {
+            // Display years for a specific contract
+            const contractPhotos = progressPhotosData[contractId];
+            if (!contractPhotos || Object.keys(contractPhotos).length === 0) {
+                html += `<p class="text-center py-4 text-gray-500">No progress photos found for contract ${contractId}.</p>`;
+            } else {
+                const years = Object.keys(contractPhotos).sort((a,b) => b - a); // Sort years descending
+                html += `<h3 class="text-xl font-semibold mb-4 text-gray-800">Years for Contract: ${contractId}</h3>`;
+                html += `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">`;
+                years.forEach(yr => {
+                    html += `
+                        <div class="card p-4 hover:shadow-lg transition-shadow duration-200">
+                            <a href="javascript:void(0)" onclick="showPage('progress-photos', null, '${contractId}', '${yr}')" class="block text-blue-700 hover:underline font-semibold text-lg">
+                                ${yr}
+                            </a>
+                        </div>`;
+                });
+                html += `</div>`;
+            }
+        } else if (!month) {
+            // Display months for a specific contract and year
+            const yearPhotos = progressPhotosData[contractId]?.[year];
+            if (!yearPhotos || Object.keys(yearPhotos).length === 0) {
+                html += `<p class="text-center py-4 text-gray-500">No progress photos found for ${year} in contract ${contractId}.</p>`;
+            } else {
+                // Manually define month order for chronological sorting
+                const monthOrder = ["January", "February", "March", "April", "May", "June",
+                                    "July", "August", "September", "October", "November", "December"];
+                const months = Object.keys(yearPhotos).sort((a,b) => monthOrder.indexOf(a) - monthOrder.indexOf(b));
+                html += `<h3 class="text-xl font-semibold mb-4 text-gray-800">Months for Contract ${contractId}, Year ${year}</h3>`;
+                html += `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">`;
+                months.forEach(mth => {
+                    html += `
+                        <div class="card p-4 hover:shadow-lg transition-shadow duration-200">
+                            <a href="javascript:void(0)" onclick="showPage('progress-photos', null, '${contractId}', '${year}', '${mth}')" class="block text-blue-700 hover:underline font-semibold text-lg">
+                                ${mth}
+                            </a>
+                        </div>`;
+                });
+                html += `</div>`;
+            }
+        } else if (!week) {
+            // Display weeks for a specific contract, year, and month
+            const monthPhotos = progressPhotosData[contractId]?.[year]?.[month];
+            if (!monthPhotos || Object.keys(monthPhotos).length === 0) {
+                html += `<p class="text-center py-4 text-gray-500">No progress photos found for ${month}, ${year} in contract ${contractId}.</p>`;
+            } else {
+                const weeks = Object.keys(monthPhotos).sort((a, b) => parseInt(a) - parseInt(b)); // Sort weeks numerically
+                html += `<h3 class="text-xl font-semibold mb-4 text-gray-800">Weeks for Contract ${contractId}, ${month} ${year}</h3>`;
+                html += `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">`;
+                weeks.forEach(wk => {
+                    html += `
+                        <div class="card p-4 hover:shadow-lg transition-shadow duration-200">
+                            <a href="javascript:void(0)" onclick="showPage('progress-photos', null, '${contractId}', '${year}', '${month}', '${wk}')" class="block text-blue-700 hover:underline font-semibold text-lg">
+                                Week ${wk}
+                            </a>
+                        </div>`;
+                });
+                html += `</div>`;
+            }
+        } else {
+            // Display actual images for a specific contract, year, month, and week
+            const images = progressPhotosData[contractId]?.[year]?.[month]?.[week];
+            if (!images || images.length === 0) {
+                html += `<p class="text-center py-4 text-gray-500">No images found for Week ${week}, ${month} ${year} in contract ${contractId}.</p>`;
+            } else {
+                html += `<h3 class="text-xl font-semibold mb-4 text-gray-800">Images for Week ${week}, ${month} ${year} (Contract: ${contractId})</h3>`;
+                html += `<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">`;
+                images.forEach(img => {
+                    const fallbackImageUrl = `https://placehold.co/300x200/cccccc/000000?text=No+Image`;
+                    html += `
+                        <div class="card p-2 flex flex-col items-center">
+                            <img src="${img.ImageURL}" alt="${img['File Name']}" class="w-full h-32 object-cover rounded-md mb-2" onerror="this.onerror=null;this.src='${fallbackImageUrl}';">
+                            <p class="text-sm font-medium text-gray-700 text-center">${img['File Name']}</p>
+                            <p class="text-xs text-gray-500 text-center">${img.Description || 'No description'}</p>
+                            <p class="text-xs text-gray-500 text-center">${formatDate(img['Upload Date'])}</p>
+                        </div>`;
+                });
+                html += `</div>`;
+            }
+        }
+
+        html += `</div>`; // Close main card div
+        appContent.innerHTML = html;
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    }
+
+    // Event Delegation for filters
+    document.addEventListener('keyup', (event) => {
+        const targetId = event.target.id;
+        if (targetId === 'contractSearch') {
+            filterContracts();
+        } else if (targetId === 'activitySearch') {
+            filterActivities();
+        } else if (targetId === 'documentSearch') {
+            filterDocuments();
+        } else if (targetId === 'mediaSearch') {
+            filterMedia();
+        }
+    });
+
+    document.addEventListener('change', (event) => {
+        const targetId = event.target.id;
+        if (targetId === 'contractStatusFilter' || targetId === 'contractEngineerFilter') {
+            filterContracts();
+        } else if (targetId === 'activityStatusFilter' || targetId === 'activityContractFilter') {
+            filterActivities();
+        } else if (targetId === 'documentTypeFilter' || targetId === 'documentContractFilter') {
+            filterDocuments();
+        } else if (targetId === 'mediaTypeFilter' || targetId === 'mediaContractFilter') {
+            filterMedia();
+        }
+    });
+
+
+    // Initial load and hash handling
+    window.onload = function() {
+      // Instead of loadEmbeddedData(), directly call fetchAndLoadDataFromGitHub()
+      fetchAndLoadDataFromGitHub().then(() => {
+          // Determine the initial page based on URL hash or default to 'home'
+          const hash = window.location.hash.substring(1);
+          const parts = hash.split('?');
+          const pageIdFromHash = parts[0] || 'home'; // Default to 'home' if no hash
+          const queryParams = new URLSearchParams(parts[1]);
+          const contractIdFromHash = queryParams.get('contractId');
+          const yearFromHash = queryParams.get('year'); // New parameter
+          const monthFromHash = queryParams.get('month'); // New parameter
+          const weekFromHash = queryParams.get('week'); // New parameter
+
+          // Explicitly show the requested page, which will also trigger its specific rendering logic.
+          showPage(pageIdFromHash, null, contractIdFromHash, yearFromHash, monthFromHash, weekFromHash);
+      }).catch(error => {
+          console.error("Error during initial load:", error);
+          // Handle error, e.g., display a message to the user
+      });
+    };
+
+    // Handle browser back/forward button
+    window.onpopstate = () => {
+      const hash = window.location.hash.substring(1);
+      const parts = hash.split('?');
+      const pageIdFromHash = parts[0] || 'home';
+      const queryParams = new URLSearchParams(parts[1]);
+      const contractIdFromHash = queryParams.get('contractId');
+      const yearFromHash = queryParams.get('year'); // New parameter
+      const monthFromHash = queryParams.get('month'); // New parameter
+      const weekFromHash = queryParams.get('week'); // New parameter
+
+      // Update active nav button
+      document.querySelectorAll('.nav-button').forEach(button => {
+        button.classList.remove('active');
+      });
+      const activeButton = document.querySelector(`.nav-button[onclick*="showPage('${pageIdFromHash}'"]`);
+      if (activeButton) {
+        activeButton.classList.add('active');
+      }
+      showPage(pageIdFromHash, activeButton, contractIdFromHash, yearFromHash, monthFromHash, weekFromHash);
+    };
+
+  </script>
+</body>
+</html>
